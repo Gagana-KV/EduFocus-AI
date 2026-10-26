@@ -34,8 +34,7 @@ services:
   # ----------------------------------------------------------------------------
   - type: web
     name: edufocus-frontend
-    env: static
-    plan: free
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
