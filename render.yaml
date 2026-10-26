@@ -1,0 +1,52 @@
+# ==============================================================================
+# EduFocus AI - Render Blueprint Specification (render.yaml)
+# Automated Cloud Deployment for AI, Blockchain, and Cloud Computing Project
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. FastAPI Backend Web Service
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: edufocus-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: GROQ_API_KEY
+        sync: false # Set securely in Render dashboard
+      - key: DATABASE_PATH
+        value: edufocus.db
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: CONTRACT_ADDRESS
+        value: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      - key: BLOCKCHAIN_CONTRACT_ADDRESS
+        value: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+
+  # ----------------------------------------------------------------------------
+  # 2. React + TypeScript + Vite Frontend Static Site
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: edufocus-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_BASE_URL
+        sync: false # Points to https://edufocus-backend.onrender.com/api
+    routes:
+      # Single-Page Application (SPA) routing: redirect all paths to index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html

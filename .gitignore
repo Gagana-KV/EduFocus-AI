@@ -1,6 +1,29 @@
+# Dependencies
 node_modules/
+**/node_modules/
 venv/
+**/venv/
+
+# Python cache & bytecode
 __pycache__/
+*.pyc
+
+# Environment files & Secrets
 .env
+.env.*
+*.key
+*.pem
+
+# Databases & local persistent files
 *.db
+*.sqlite
+*.sqlite3
+
+# Build outputs & frontend distribution
 dist/
+build/
+
+# Blockchain build artifacts & cache
+blockchain/artifacts/
+blockchain/cache/
+

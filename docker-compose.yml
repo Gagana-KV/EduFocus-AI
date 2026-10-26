@@ -1,0 +1,72 @@
+# ==============================================================================
+# EduFocus AI - Production Docker Compose Orchestration
+# Cloud-Ready Multi-Container Architecture (Frontend + Backend + Persistent Storage)
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # FastAPI Backend Service (AI Chatbot, Focus Analytics, Blockchain Verification)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edufocus-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_PATH=/app/data/edufocus.db
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - BLOCKCHAIN_PROVIDER_URL=${BLOCKCHAIN_PROVIDER_URL:-}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+      - BLOCKCHAIN_PRIVATE_KEY=${BLOCKCHAIN_PRIVATE_KEY:-}
+    env_file:
+      - ./backend/.env
+    volumes:
+      # Persistent storage volume for SQLite database
+      - edufocus-db-data:/app/data
+    networks:
+      - edufocus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/blockchain/status"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # React + Vite + Tailwind Frontend (Nginx Production Reverse-Proxy)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api}
+    container_name: edufocus-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edufocus-net
+
+# ------------------------------------------------------------------------------
+# Persistent Volumes (Data retention across deployments and cloud restarts)
+# ------------------------------------------------------------------------------
+volumes:
+  edufocus-db-data:
+    driver: local
+
+# ------------------------------------------------------------------------------
+# Isolated Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  edufocus-net:
+    driver: bridge

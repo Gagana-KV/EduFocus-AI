@@ -1,7 +1,12 @@
-Write-Host "Starting Backend..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit -Command `"cd backend; if (Test-Path venv\Scripts\activate.ps1) { .\venv\Scripts\activate.ps1 }; uvicorn main:app --reload`""
+$backendDir = Join-Path $PSScriptRoot "backend"
+$frontendDir = Join-Path $PSScriptRoot "frontend"
 
-Write-Host "Starting Frontend..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit -Command `"cd frontend; npm run dev`""
+Write-Host "Starting Backend on http://localhost:8000..." -ForegroundColor Green
+Start-Process powershell -WorkingDirectory $backendDir -ArgumentList "-NoExit -Command `"if (Test-Path venv\Scripts\python.exe) { .\venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000 } else { python -m uvicorn main:app --reload --port 8000 }`""
 
-Write-Host "EduFocus AI started successfully! Terminals have been opened for both services." -ForegroundColor Cyan
+Write-Host "Starting Frontend on http://localhost:5173..." -ForegroundColor Green
+Start-Process powershell -WorkingDirectory $frontendDir -ArgumentList "-NoExit -Command `"npm run dev`""
+
+Write-Host "EduFocus AI started successfully!" -ForegroundColor Cyan
+Write-Host "Frontend: http://localhost:5173" -ForegroundColor Yellow
+Write-Host "Backend API: http://localhost:8000" -ForegroundColor Yellow

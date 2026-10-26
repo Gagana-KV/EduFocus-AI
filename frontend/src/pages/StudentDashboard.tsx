@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Lightbulb, ShieldAlert } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '../api';
+import api, { getWebSocketUrl } from '../api';
 
 export default function StudentDashboard() {
   const [data, setData] = useState<any>(null);
@@ -33,27 +33,53 @@ export default function StudentDashboard() {
     };
     fetchInitialData();
 
-    // Setup WebSocket
-    const ws = new WebSocket(`ws://localhost:8000/ws/focus/${user.id}`);
-    wsRef.current = ws;
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      if (msg.current_focus_score !== undefined) {
+    // Fallback polling every 3 seconds to guarantee updates even if WebSocket is blocked
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await api.get(`/dashboard/${user.id}`);
         setData((prev: any) => ({
           ...(prev || {}),
-          current_focus_score: msg.current_focus_score,
-          recent_events: msg.recent_events || (prev?.recent_events || [])
+          current_focus_score: res.data.current_focus_score,
+          recent_events: res.data.recent_events || []
         }));
+      } catch {
+        // Silent catch for background poll
       }
-      if (msg.distraction_alert) {
-        setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 4000);
-      }
-    };
+    }, 3000);
+
+    // Setup WebSocket with dynamic cloud/local URL
+    try {
+      const wsUrl = getWebSocketUrl(`/ws/focus/${user.id}`);
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.current_focus_score !== undefined) {
+          setData((prev: any) => ({
+            ...(prev || {}),
+            current_focus_score: msg.current_focus_score,
+            recent_events: msg.recent_events || (prev?.recent_events || [])
+          }));
+        }
+        if (msg.distraction_alert) {
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 4000);
+        }
+      };
+
+      ws.onerror = () => {
+        // Gracefully handled by pollInterval fallback
+      };
+    } catch (wsErr) {
+      console.warn("WebSocket initialization fallback to polling:", wsErr);
+    }
 
     return () => {
-      ws.close();
+      clearInterval(pollInterval);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
   }, [user?.id, navigate]);
 

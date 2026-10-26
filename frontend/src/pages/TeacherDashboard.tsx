@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, AlertTriangle, BookOpen, GraduationCap, Download, X, FileText, CheckCircle } from 'lucide-react';
+import { Users, AlertTriangle, BookOpen, GraduationCap, FileText, CheckCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api';
+import BlockchainAuditPanel from '../components/BlockchainAuditPanel';
+import ReportModal from '../components/ReportModal';
+import type { ReportModalData } from '../components/ReportModal';
 
 export default function TeacherDashboard() {
   const [data, setData] = useState<any>(null);
   const [insight, setInsight] = useState<any>(null);
-  const [reportModal, setReportModal] = useState<{type: string, content: string} | null>(null);
+  const [reportModal, setReportModal] = useState<ReportModalData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [messageModal, setMessageModal] = useState<{recipientId: number, name: string} | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -43,9 +46,20 @@ export default function TeacherDashboard() {
     try {
       // Simulate generating a class report by fetching student 3's weekly report
       const res = await api.get(`/reports/weekly/3`);
-      setReportModal({ type: 'Weekly Classroom', content: res.data.report });
-    } catch (e) {
+      setReportModal({ 
+        type: 'Weekly Classroom', 
+        content: res.data.report,
+        reportId: res.data.report_id,
+        reportHash: res.data.report_hash,
+        txHash: res.data.blockchain_tx_id,
+        blockNumber: res.data.block_number,
+        network: res.data.network,
+        studentName: 'Grade 10 Class Analytics'
+      });
+    } catch (e: any) {
       console.error("Error generating report", e);
+      const errMsg = e.response?.data?.detail || e.message || "Failed to generate report.";
+      setReportModal({ type: 'Weekly Classroom', content: `Error generating report: ${errMsg}` });
     } finally {
       setLoadingReport(false);
     }
@@ -283,35 +297,25 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
+      {/* Blockchain Audit Trail & Integrity Ledger */}
+      <div className="hide-on-print mt-8">
+        <BlockchainAuditPanel 
+          userId={user.id} 
+          onViewReport={(rep) => setReportModal({
+            type: rep.report_type,
+            content: rep.content,
+            reportId: rep.id,
+            reportHash: rep.report_hash,
+            txHash: rep.blockchain_tx_id,
+            blockNumber: rep.block_number,
+            network: rep.network,
+            studentName: 'Classroom Overview'
+          })} 
+        />
+      </div>
+
       {/* Report Modal */}
-      {reportModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 report-modal-overlay">
-          <div className="bg-dark-bg border border-panel-border rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl report-modal-content">
-            <div className="flex justify-between items-center p-6 border-b border-panel-border hide-on-print">
-              <h3 className="text-2xl font-bold text-white capitalize">{reportModal.type} Report</h3>
-              <div className="flex items-center gap-3">
-                <button onClick={() => window.print()} className="px-4 py-2 bg-nvidia-blue text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-nvidia-blue/80 transition-colors">
-                  <Download className="w-4 h-4" /> Download PDF
-                </button>
-                <button onClick={() => setReportModal(null)} className="p-2 text-gray-400 hover:text-white transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-8 overflow-y-auto print-content bg-white text-black rounded-b-2xl">
-              <div className="hidden print:block mb-8 border-b pb-4">
-                <h1 className="text-3xl font-bold text-black">EduFocus AI</h1>
-                <p className="text-gray-600 capitalize">{reportModal.type} Report for Classroom</p>
-                <p className="text-sm text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
-              </div>
-              <div className="prose max-w-none whitespace-pre-wrap text-black">
-                {reportModal.content}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReportModal data={reportModal} onClose={() => setReportModal(null)} />
 
       {/* Message Modal */}
       {messageModal && (

@@ -92,7 +92,7 @@ export default function AIAssistant() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-gray-700' : 'bg-nvidia-green/20'}`}>
                     {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-nvidia-green" />}
                   </div>
-                  <div className={`p-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-nvidia-blue/20 text-white rounded-tr-none border border-nvidia-blue/30' : 'bg-panel-bg border border-panel-border text-gray-200 rounded-tl-none'}`}>
+                  <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${msg.role === 'user' ? 'bg-nvidia-blue/20 text-white rounded-tr-none border border-nvidia-blue/30' : 'bg-panel-bg border border-panel-border text-gray-200 rounded-tl-none'}`}>
                     {msg.content}
                   </div>
                 </div>
